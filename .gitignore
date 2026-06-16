@@ -1,0 +1,6 @@
+# IDE
+.idea/
+
+# Node / TypeSpec (api-spec)
+node_modules/
+package-lock.json
