@@ -77,24 +77,37 @@
 │   ├── package.json          зависимости TypeSpec 1.13.0
 │   └── tsp-output/
 │       └── openapi.yaml      сгенерированный контракт (артефакт, коммитится)
-├── frontend/                 React + Vite + TS, shadcn/ui (ПЛАНИРУЕТСЯ)
+├── frontend/                 React + Vite + TS, shadcn/ui (ГОТОВО)
+│   ├── src/
+│   │   ├── api/              client.ts (openapi-fetch), hooks.ts (TanStack Query), schema.d.ts (openapi-typescript), types.ts
+│   │   ├── app/              router.tsx (React Router), RootLayout.tsx
+│   │   ├── components/ui/    shadcn/ui: button, card, input, label, table, sonner, badge, skeleton, textarea
+│   │   ├── lib/              utils.ts (cn), datetime.ts (форматирование ru-RU)
+│   │   └── pages/            EventTypesPage, BookingPage, BookingConfirmPage, admin/AdminEventTypesPage, admin/AdminBookingsPage, NotFoundPage
+│   ├── .env.development      VITE_API_BASE_URL=http://localhost:4010 (Prism)
+│   └── .env.production       VITE_API_BASE_URL=http://localhost:8080 (backend)
 ├── backend/                  Spring Boot (ПЛАНИРУЕТСЯ)
 ├── AGENTS.md
 └── README.md
 ```
 
-## Frontend (frontend) — план
+## Frontend (frontend) — готово
 
 Отдельное SPA на Vite + React + TS. Все запросы — через typesafe-клиент,
 сгенерированный из контракта. Переключение mock/real через `VITE_API_BASE_URL`.
+
+Особенность на Windows: Vite привязывается к `127.0.0.1` (IPv4) — см.
+`host: '127.0.0.1'` в `vite.config.ts`. Без этого браузер не достучится,
+если localhost резолвится в IPv4.
 
 ### Команды (выполнять в `frontend/`)
 
 ```
 npm install        # установка зависимостей
 npm run gen:api    # openapi-typescript из ../api-spec/tsp-output/openapi.yaml -> src/api/schema.d.ts
-npm run mock       # Prism mock: npx @stoplight/prism-cli mock ../api-spec/tsp-output/openapi.yaml -p 4010
+npm run mock       # Prism mock на http://127.0.0.1:4010
 npm run dev        # Vite dev-сервер (:5173)
+npm run dev:mock   # параллельно: mock + dev (run-p)
 npm run build      # production-сборка
 ```
 
@@ -102,8 +115,10 @@ npm run build      # production-сборка
 
 - `src/api/schema.d.ts` — сгенерированные типы (openapi-typescript).
 - `src/api/client.ts` — openapi-fetch, `baseUrl` из `VITE_API_BASE_URL`.
-- `src/components/ui/` — компоненты shadcn/ui.
+- `src/api/hooks.ts` — TanStack Query хуки (`useEventTypes`, `useSlots`, `useCreateBooking` и др.).
+- `src/components/ui/` — компоненты shadcn/ui (button, card, input, label, table, sonner, badge, skeleton, textarea).
 - `src/pages/` — экраны: список типов, бронирование, подтверждение, админка.
+- `src/lib/datetime.ts` — форматирование дат/времени (ru-RU), группировка слотов по дням.
 - `.env.development` → Prism (`:4010`), `.env.production` → backend (`:8080`).
 
 ## Контракт API (api-spec)
@@ -176,11 +191,11 @@ npm run clean      # проверка без эмита
 (mock из контракта), затем добавляется бэкенд и выполняется стыковка.
 
 1. ✅ TypeSpec-контракт → OpenAPI (`api-spec/`).
-2. ⬜ Frontend init: Vite + React + TS, Tailwind + shadcn/ui, React Router,
+2. ✅ Frontend init: Vite + React + TS, Tailwind + shadcn/ui, React Router,
    TanStack Query.
-3. ⬜ API-слой фронта: `gen:api` (openapi-typescript) + `client.ts`
+3. ✅ API-слой фронта: `gen:api` (openapi-typescript) + `client.ts`
    (openapi-fetch) + env-переключение + скрипт Prism `mock`.
-4. ⬜ Экраны фронта (список типов, бронирование, подтверждение, админка) —
+4. ✅ Экраны фронта (список типов, бронирование, подтверждение, админка) —
    разработка против Prism (`:4010`).
 5. ⬜ Backend init: Spring Boot (Gradle) + зависимости.
 6. ⬜ PostgreSQL + Flyway: схема и сид владельца/расписания.
@@ -190,4 +205,4 @@ npm run clean      # проверка без эмита
 9. ⬜ REST-контроллеры guest + admin по контракту, DTO, обработка ошибок, CORS.
 10. ⬜ Интеграция фронта с реальным бэкендом (`VITE_API_BASE_URL` → `:8080`),
     сквозная проверка инварианта занятости.
-11. ⬜ Обновить README (запуск api-spec / frontend / prism / backend).
+11. ✅ Обновить README (запуск api-spec / frontend / prism / backend).
