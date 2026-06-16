@@ -1,0 +1,193 @@
+# AGENTS.md
+
+Контекст проекта для AI-агентов и разработчиков. Держать в актуальном
+состоянии при изменении архитектуры, стека или соглашений.
+
+## Что за проект
+
+Сервис бронирования встреч — MVP, аналог cal.com. Владелец календаря задаёт
+типы событий, гость без регистрации бронирует свободный слот.
+
+### Роли (без аутентификации)
+
+- **Владелец (owner)** — один заранее заданный профиль (сид в БД), по умолчанию
+  используется в админской части. Логина нет.
+- **Гость (guest)** — бронирует слоты без аккаунта и без входа.
+
+### Функциональность MVP
+
+Владелец:
+- Создаёт типы событий: `id`, название, описание, длительность в минутах.
+- Просматривает страницу предстоящих встреч — единый список бронирований всех
+  типов событий.
+
+Гость:
+- Видит список типов брони (название, описание, длительность).
+- Выбирает тип события, открывает календарь, выбирает свободный слот в
+  ближайшие 14 дней.
+- Создаёт бронирование на выбранный слот.
+
+### Бизнес-правила (инварианты)
+
+- **Окно записи:** доступные слоты формируются на **14 дней** начиная с текущей
+  даты. Записаться можно только на свободный слот из этого окна.
+- **Правило занятости:** на одно и то же время нельзя создать две записи —
+  **даже если это разные типы событий**. Пересечение проверяется глобально по
+  владельцу.
+- **Шаг слотов = длительность типа события** (30-мин тип → 09:00, 09:30…;
+  60-мин → 09:00, 10:00…). Слот не должен выходить за конец рабочего окна.
+- **Доступность владельца** — фиксированное еженедельное расписание (сид,
+  например Пн–Пт 09:00–17:00). Прошедшие слоты текущего дня отсекаются.
+
+## Технологический стек
+
+- **Контракт API:** TypeSpec → OpenAPI 3.0 (источник истины для API).
+- **Backend:** Java + Spring Boot, сборка Gradle, Spring Data JPA.
+- **БД:** PostgreSQL, миграции через Flyway.
+- **Frontend:** React + Vite + TypeScript, UI на **shadcn/ui** (Tailwind),
+  роутинг — React Router, data-fetching — TanStack Query.
+- **API-клиент фронта:** **openapi-typescript** (типы из контракта) +
+  **openapi-fetch** (typesafe-клиент).
+- **Mock API в разработке:** **Prism** (mock-сервер из `openapi.yaml`).
+- **Аутентификация:** отсутствует.
+- **Внешние календари / уведомления:** не входят в MVP.
+
+### Архитектура (decoupled)
+
+Фронтенд — **отдельное приложение**. Получает данные и выполняет действия
+**только через API по контракту** (`openapi.yaml`). Должен корректно работать с
+**отдельно запущенным бэкендом**. Прямого доступа к БД/коду бэкенда у фронта нет.
+
+- В разработке фронт ходит на **Prism** (mock, `http://localhost:4010`).
+- В интеграции фронт ходит на **реальный бэкенд** (`http://localhost:8080`).
+- Переключение — через переменную окружения Vite `VITE_API_BASE_URL`.
+
+### Окружение
+
+- **Node.js:** v24.16.0 (LTS), npm 11.13.0. TypeSpec 1.13.0 требует Node `>=22`.
+- **ОС разработки:** Windows, PowerShell.
+
+## Структура репозитория
+
+```
+.
+├── api-spec/                 контракт API на TypeSpec (ГОТОВО)
+│   ├── main.tsp              модели + операции
+│   ├── tspconfig.yaml        эмиттер @typespec/openapi3 -> openapi.yaml
+│   ├── package.json          зависимости TypeSpec 1.13.0
+│   └── tsp-output/
+│       └── openapi.yaml      сгенерированный контракт (артефакт, коммитится)
+├── frontend/                 React + Vite + TS, shadcn/ui (ПЛАНИРУЕТСЯ)
+├── backend/                  Spring Boot (ПЛАНИРУЕТСЯ)
+├── AGENTS.md
+└── README.md
+```
+
+## Frontend (frontend) — план
+
+Отдельное SPA на Vite + React + TS. Все запросы — через typesafe-клиент,
+сгенерированный из контракта. Переключение mock/real через `VITE_API_BASE_URL`.
+
+### Команды (выполнять в `frontend/`)
+
+```
+npm install        # установка зависимостей
+npm run gen:api    # openapi-typescript из ../api-spec/tsp-output/openapi.yaml -> src/api/schema.d.ts
+npm run mock       # Prism mock: npx @stoplight/prism-cli mock ../api-spec/tsp-output/openapi.yaml -p 4010
+npm run dev        # Vite dev-сервер (:5173)
+npm run build      # production-сборка
+```
+
+### Структура
+
+- `src/api/schema.d.ts` — сгенерированные типы (openapi-typescript).
+- `src/api/client.ts` — openapi-fetch, `baseUrl` из `VITE_API_BASE_URL`.
+- `src/components/ui/` — компоненты shadcn/ui.
+- `src/pages/` — экраны: список типов, бронирование, подтверждение, админка.
+- `.env.development` → Prism (`:4010`), `.env.production` → backend (`:8080`).
+
+## Контракт API (api-spec)
+
+`main.tsp` — источник истины. После правок **обязательно** пересобрать OpenAPI.
+
+### Команды (выполнять в `api-spec/`)
+
+```
+npm install        # установка зависимостей
+npm run build      # tsp compile .  -> tsp-output/openapi.yaml
+npm run watch      # пересборка в режиме наблюдения
+npm run clean      # проверка без эмита
+```
+
+### Модели
+
+`EventType`, `EventTypeCreate`, `Slot`, `Booking`, `BookingCreate`,
+`BookingStatus` (CONFIRMED / CANCELLED), `Error`.
+
+### Эндпоинты
+
+Гость:
+- `GET  /api/event-types` — активные типы событий
+- `GET  /api/event-types/{id}` — детали типа (404)
+- `GET  /api/event-types/{id}/slots` — свободные слоты на 14 дней (404)
+- `POST /api/bookings` — создать бронь (201 / 400 / 404 / **409** при пересечении)
+- `GET  /api/bookings/{id}` — детали брони (404)
+
+Владелец (админка, без auth):
+- `GET  /api/admin/event-types` — все типы, включая неактивные
+- `POST /api/admin/event-types` — создать тип события (201 / 400)
+- `GET  /api/admin/bookings` — единый список встреч всех типов, по времени
+
+### Соглашения контракта
+
+- Время — `utcDateTime` (ISO-8601, UTC). Интервал слота полуоткрытый `[start, end)`.
+- Занятый слот → ответ `409` с `Error.code = "SLOT_TAKEN"`.
+- Версия TypeSpec 1.x: object value через `#{ ... }` (`@service(#{...})`,
+  `@info(#{...})`). Пакет `@typespec/rest` не используется.
+
+## Доменная модель (PostgreSQL) — план backend
+
+- **owner** — `id`, `name`, `email`, `timezone` (1 запись, сид).
+- **event_type** — `id`, `owner_id`, `title`, `description`, `duration_minutes`,
+  `active`.
+- **availability_rule** — `id`, `owner_id`, `day_of_week`, `start_time`,
+  `end_time` (сид: Пн–Пт 09:00–17:00).
+- **booking** — `id`, `event_type_id`, `guest_name`, `guest_email`,
+  `start_time`, `end_time`, `status`, `created_at`.
+
+Защита инварианта занятости: транзакционная проверка пересечений + БД-уровень
+`EXCLUDE USING gist` по `tstzrange(start_time, end_time)` для броней владельца.
+
+## Соглашения по коду и процессу
+
+- **Контракт-первый подход:** изменения API начинаются с `main.tsp`, затем
+  пересборка OpenAPI, затем синхронизация backend и frontend.
+- **Git / коммиты:** Conventional Commits, сообщения на русском
+  (например: `feat(api-spec): ...`, `chore: ...`).
+  Коммитить/пушить только по явному запросу.
+- **Игнорируется git'ом:** `.idea/`, `node_modules/`, `package-lock.json`
+  (см. корневой `.gitignore`).
+- **Файловые операции на Windows/PowerShell:** пути со спецсимволами заключать в
+  кавычки.
+
+## Порядок реализации (roadmap)
+
+Контракт-первый подход. Фронтенд разрабатывается раньше бэкенда против Prism
+(mock из контракта), затем добавляется бэкенд и выполняется стыковка.
+
+1. ✅ TypeSpec-контракт → OpenAPI (`api-spec/`).
+2. ⬜ Frontend init: Vite + React + TS, Tailwind + shadcn/ui, React Router,
+   TanStack Query.
+3. ⬜ API-слой фронта: `gen:api` (openapi-typescript) + `client.ts`
+   (openapi-fetch) + env-переключение + скрипт Prism `mock`.
+4. ⬜ Экраны фронта (список типов, бронирование, подтверждение, админка) —
+   разработка против Prism (`:4010`).
+5. ⬜ Backend init: Spring Boot (Gradle) + зависимости.
+6. ⬜ PostgreSQL + Flyway: схема и сид владельца/расписания.
+7. ⬜ JPA-сущности и репозитории.
+8. ⬜ `SlotService` (окно 14 дней, шаг = duration) + `BookingService`
+   (глобальная проверка пересечений).
+9. ⬜ REST-контроллеры guest + admin по контракту, DTO, обработка ошибок, CORS.
+10. ⬜ Интеграция фронта с реальным бэкендом (`VITE_API_BASE_URL` → `:8080`),
+    сквозная проверка инварианта занятости.
+11. ⬜ Обновить README (запуск api-spec / frontend / prism / backend).
