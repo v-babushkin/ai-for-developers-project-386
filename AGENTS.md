@@ -121,6 +121,54 @@ npm run build      # production-сборка
 - `src/lib/datetime.ts` — форматирование дат/времени (ru-RU), группировка слотов по дням.
 - `.env.development` → Prism (`:4010`), `.env.production` → backend (`:8080`).
 
+## Backend (backend) — в работе
+
+Spring Boot 3.2 + Gradle, **in-memory** хранилище (без БД). Все операции —
+только через Gradle.
+
+### Переменные окружения
+
+Перед любой Gradle-командой обязательно устанавливать:
+
+```
+$env:JAVA_HOME="C:\Users\Vitalii\.jdks\corretto-17.0.5"
+```
+
+### Команды (выполнять в `backend/`)
+
+```
+.\gradlew.bat build          # сборка проекта (bootJar + тесты)
+.\gradlew.bat bootRun        # запуск dev-сервера на :8080
+.\gradlew.bat bootJar        # сборка исполняемого JAR
+.\gradlew.bat test           # запуск тестов
+```
+
+Первый запуск скачивает Gradle 8.7 автоматически.
+
+### Особенности
+
+- Хранилище — `ConcurrentHashMap` в сервисах, данные сбрасываются при рестарте.
+- Расписание владельца (доступность) — хардкод Пн–Пт 09:00–17:00 UTC.
+- Владелец — один, id=1, жёстко задан.
+- CORS настроен на `http://localhost:5173` (Vite dev).
+- При пересечении броней возвращается `409` с `Error.code = "SLOT_TAKEN"`.
+- **Нюанс PowerShell + curl:** JSON в `-d` через одинарные кавычки ломает экранирование.
+  Всегда передавать тело запроса через файл:
+  ```powershell
+  '{"title":"test"}' | Out-File -Encoding ascii body.json
+  curl.exe -d "@body.json" -H "Content-Type: application/json" ...
+  ```
+
+### Структура
+
+- `src/main/java/com/calbooking/model/` — доменные модели (EventType, Booking, Slot, BookingStatus)
+- `src/main/java/com/calbooking/dto/` — Request/Response DTO
+- `src/main/java/com/calbooking/repository/` — in-memory репозитории
+- `src/main/java/com/calbooking/service/` — бизнес-логика (EventTypeService, SlotService, BookingService)
+- `src/main/java/com/calbooking/controller/` — REST-контроллеры (guest + admin)
+- `src/main/java/com/calbooking/exception/` — исключения + @ControllerAdvice
+- `src/main/java/com/calbooking/config/` — CORS-конфигурация
+
 ## Контракт API (api-spec)
 
 `main.tsp` — источник истины. После правок **обязательно** пересобрать OpenAPI.
@@ -197,12 +245,11 @@ npm run clean      # проверка без эмита
    (openapi-fetch) + env-переключение + скрипт Prism `mock`.
 4. ✅ Экраны фронта (список типов, бронирование, подтверждение, админка) —
    разработка против Prism (`:4010`).
-5. ⬜ Backend init: Spring Boot (Gradle) + зависимости.
-6. ⬜ PostgreSQL + Flyway: схема и сид владельца/расписания.
-7. ⬜ JPA-сущности и репозитории.
-8. ⬜ `SlotService` (окно 14 дней, шаг = duration) + `BookingService`
-   (глобальная проверка пересечений).
-9. ⬜ REST-контроллеры guest + admin по контракту, DTO, обработка ошибок, CORS.
-10. ⬜ Интеграция фронта с реальным бэкендом (`VITE_API_BASE_URL` → `:8080`),
+5. ✅ Backend init: Spring Boot (Gradle) + in-memory хранилище (без БД).
+   — Model, DTO, Repository, Service, Controller, CORS, error handling.
+6. ⬜ PostgreSQL + Flyway: схема и сид владельца/расписания
+   (замена in-memory на постоянное хранение).
+7. ⬜ JPA-сущности и репозитории (вместо ConcurrentHashMap).
+8. ⬜ Интеграция фронта с реальным бэкендом (`VITE_API_BASE_URL` → `:8080`),
     сквозная проверка инварианта занятости.
-11. ✅ Обновить README (запуск api-spec / frontend / prism / backend).
+9. ✅ Обновить README (запуск api-spec / frontend / prism / backend).
