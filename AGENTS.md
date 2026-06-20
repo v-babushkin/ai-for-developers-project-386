@@ -49,6 +49,7 @@
 - **API-клиент фронта:** **openapi-typescript** (типы из контракта) +
   **openapi-fetch** (typesafe-клиент).
 - **Mock API в разработке:** **Prism** (mock-сервер из `openapi.yaml`).
+- **Release automation:** **release-please** (GitHub Actions) — авто-релизы по Conventional Commits.
 - **Аутентификация:** отсутствует.
 - **Внешние календари / уведомления:** не входят в MVP.
 
@@ -86,7 +87,10 @@
 │   │   └── pages/            EventTypesPage, BookingPage, BookingConfirmPage, admin/AdminEventTypesPage, admin/AdminBookingsPage, NotFoundPage
 │   ├── .env.development      VITE_API_BASE_URL=http://localhost:4010 (Prism)
 │   └── .env.production       VITE_API_BASE_URL=http://localhost:8080 (backend)
-├── backend/                  Spring Boot (ПЛАНИРУЕТСЯ)
+├── backend/                  Spring Boot (ГОТОВО)
+│   └── gradle.properties     версия проекта (обновляется release-please)
+├── release-please-config.json        конфиг release-please (single-package)
+├── .release-please-manifest.json     манифест текущей версии
 ├── AGENTS.md
 └── README.md
 ```
@@ -228,6 +232,11 @@ npm run clean      # проверка без эмита
 - **Git / коммиты:** Conventional Commits, сообщения на русском
   (например: `feat(api-spec): ...`, `chore: ...`).
   Коммитить/пушить только по явному запросу.
+- **Версионирование:** автоматическое через **release-please** (GitHub Actions).
+  Единая версия для всего репозитория (single-package). При push в `main`
+  release-please создаёт Release PR с обновлением версий в файлах:
+  `api-spec/package.json`, `frontend/package.json`, `backend/gradle.properties`.
+  После merge Release PR создаётся GitHub Release с тегом `v*`.
 - **Игнорируется git'ом:** `.idea/`, `node_modules/`, `package-lock.json`
   (см. корневой `.gitignore`).
 - **Файловые операции на Windows/PowerShell:** пути со спецсимволами заключать в
@@ -253,3 +262,4 @@ npm run clean      # проверка без эмита
 8. ⬜ Интеграция фронта с реальным бэкендом (`VITE_API_BASE_URL` → `:8080`),
     сквозная проверка инварианта занятости.
 9. ✅ Обновить README (запуск api-spec / frontend / prism / backend).
+10. ✅ Release-please: GitHub Actions workflow + конфиг + манифест.
