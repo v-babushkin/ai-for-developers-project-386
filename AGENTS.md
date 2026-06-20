@@ -137,13 +137,13 @@ $env:JAVA_HOME="C:\Users\Vitalii\.jdks\corretto-17.0.5"
 ### Команды (выполнять в `backend/`)
 
 ```
-.\gradlew.bat build          # сборка проекта (bootJar + тесты)
-.\gradlew.bat bootRun        # запуск dev-сервера на :8080
-.\gradlew.bat bootJar        # сборка исполняемого JAR
-.\gradlew.bat test           # запуск тестов
+gradle build          # сборка проекта (bootJar + тесты)
+gradle bootRun        # запуск dev-сервера на :8080
+gradle bootJar        # сборка исполняемого JAR
+gradle test           # запуск тестов
 ```
 
-Первый запуск скачивает Gradle 8.7 автоматически.
+Требуется локально установленный Gradle (в системе найден **Gradle 9.1.0**).
 
 ### Особенности
 
