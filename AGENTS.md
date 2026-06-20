@@ -123,7 +123,7 @@ npm run build      # production-сборка
 
 ## Backend (backend) — в работе
 
-Spring Boot 3.2 + Gradle, **in-memory** хранилище (без БД). Все операции —
+Spring Boot 3.5 + Gradle, **in-memory** хранилище (без БД). Все операции —
 только через Gradle.
 
 ### Переменные окружения
