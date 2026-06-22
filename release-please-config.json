@@ -20,7 +20,12 @@
           "path": "frontend/package.json",
           "jsonpath": "$.version"
         },
-        "backend/gradle.properties"
+        {
+          "type": "generic",
+          "path": "backend/gradle.properties",
+          "start": "version=",
+          "end": ""
+        }
       ]
     }
   }
