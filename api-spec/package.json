@@ -1,6 +1,6 @@
 {
   "name": "calbooking-api-spec",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "TypeSpec API contract for the cal.com-like booking service",
   "type": "module",
