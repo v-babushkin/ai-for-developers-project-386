@@ -3,6 +3,8 @@
 
 ---
 
+**Деплой:** https://calbooking-bj3g.onrender.com
+
 Сервис бронирования встреч, аналог cal.com.
 
 ## Быстрый старт (Frontend)
