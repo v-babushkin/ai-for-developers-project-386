@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.3](https://github.com/v-babushkin/ai-for-developers-project-386/compare/v0.0.2...v0.0.3) (2026-06-22)
+
+
+### Features
+
+* Dockerfile + SPA routing для единого образа бэкенда и фронта ([ca78395](https://github.com/v-babushkin/ai-for-developers-project-386/commit/ca783957a2c57f7c057ce7775efaa8563ac22751))
+
+
+### Bug Fixes
+
+* добавлен version.txt для корректной работы release-please ([8890749](https://github.com/v-babushkin/ai-for-developers-project-386/commit/8890749c6250a0d58b8f2122773af64ca833eb24))
+
 ## [0.0.2](https://github.com/v-babushkin/ai-for-developers-project-386/compare/v0.0.1...v0.0.2) (2026-06-22)
 
 
